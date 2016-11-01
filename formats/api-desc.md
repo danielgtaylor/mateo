@@ -1,0 +1,38 @@
+# API Desc
+- title
+- description
+- tags[]
+  - name
+  - description
+- resources[]
+  - name
+  - description
+  - uriTemplate
+  - uriParams[]
+    - name
+    - description
+    - example
+  - actions[]
+    - name
+    - description
+    - method
+    - uriTemplate *override*
+    - uriParams[] *override*
+    - uriParamsSchema
+    - requestBodySchema
+    - responseBodySchema
+    - examples[]
+      - request
+        - name
+        - description
+        - uriParams[] *override*
+        - headers[]
+        - body
+        - __schema__ *override*
+      - response
+        - name
+        - description
+        - uriParams[] *override*
+        - headers[]
+        - body
+        - __schema__ *override*

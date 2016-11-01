@@ -1,0 +1,33 @@
+{
+  "name": "mateo",
+  "version": "0.1.0",
+  "description": "Simple API Description interface",
+  "main": "src/index.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "drafter": "^1.1.0",
+    "fury-adapter-swagger": "^0.9.6",
+    "lodash.defaults": "^4.2.0",
+    "lodash.get": "^4.4.2",
+    "lodash.merge": "^4.6.0",
+    "minim": "^0.14.2",
+    "minim-parse-result": "^0.2.2"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "eslint": "^3.8.1",
+    "istanbul": "^0.4.5",
+    "mocha": "^3.1.2"
+  },
+  "scripts": {
+    "test": "eslint src && mocha --recursive",
+    "coverage": "istanbul cover node_modules/mocha/bin/_mocha -- --recursive --reporter dot"
+  },
+  "engines": {
+    "node": "^6.0.0"
+  },
+  "author": "Daniel G. Taylor <danielgtaylor@gmail.com>",
+  "license": "MIT"
+}

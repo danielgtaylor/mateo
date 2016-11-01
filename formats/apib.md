@@ -1,0 +1,51 @@
+# API Elements (API Blueprint)
+- title
+- metadata
+  - format version
+  - host (base URL)
+- copy[] (description)
+- resources[]
+- resource groups[]
+  - title
+  - copy[]
+  - resources[]
+    - title
+    - copy[]
+    - href
+    - href variables
+      - key/value/attributes
+    - transitions[]
+      - title
+      - copy[]
+      - href *override*
+      - href variables *override*
+      - http method
+      - http transactions[]
+        - request
+          - title
+          - copy[]
+          - href *override*
+          - href variables *override*
+          - headers[]
+            - key/value
+          - body[]
+            - content type
+            - content
+          - schema[]
+          - data structure
+           - mson elements or reference
+        - response
+          - title
+          - copy[]
+          - status code
+          - headers[]
+            - key/value
+          - body[]
+            - content type
+            - content
+          - schema[]
+          - data structure
+           - mson elements or reference
+- data structure groups[]
+  - data structure
+    - mson elements

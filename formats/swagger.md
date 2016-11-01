@@ -1,0 +1,59 @@
+# Swagger 2.0
+- version (swagger: 2.0)
+- info
+  - title
+  - description
+  - terms of service
+  - contact
+    - name
+    - url
+    - email
+  - license
+    - name
+    - url
+  - version
+- host
+- base path
+- schemes
+- consumes
+- produces
+- definitions
+- parameters
+- responses
+- security definitions
+- security
+- tags
+  - name
+  - description
+- paths
+  - /foo
+    - parameters[]
+    - [method]
+      - tags[] (list[string])
+      - summary
+      - description
+      - operationId
+      - consumes
+      - produces
+      - parameters[] *override*
+        - name
+        - in
+        - description
+        - required
+        - JSON-schema style restrictions on type
+        - default
+      - responses[]
+        - description
+        - headers[]
+          - map of name -> header
+            - description
+            - type
+            - format
+            - JSON-schema style restrictions
+            - default value
+        - examples[]
+          - map of mimetype -> example
+        - schema
+      - schemes *override*
+      - deprecated (bool)
+      - security
