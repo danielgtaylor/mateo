@@ -1,0 +1,78 @@
+# Open API 3.0
+- version (openapi: 3.0.0)
+- info
+  - title
+  - description
+  - terms of service
+  - contact
+    - name
+    - url
+    - email
+  - license
+    - name
+    - url
+  - version
+- servers[]
+  - url template
+  - description
+  - url template parameters
+- components (mostly used with `$ref`s so we can deref and ignore this)
+  - definitions
+  - responses
+  - parameters
+  - response headers
+  - security definitions
+- security
+  - key: security definition name, value: e.g. oauth scopes
+- tags
+  - name
+  - description
+- paths
+  - /foo
+    - summary
+    - description
+    - server *override*
+    - parameters[]
+    - [method]
+      - tags[] (list[string])
+      - summary
+      - description
+      - operationId
+      - parameters[] *override*
+        - name
+        - in
+        - description
+        - required
+        - JSON-schema style restrictions on type
+        - default
+      - request body
+        - description
+        - content
+          - key: mimetype, value:
+            - schema
+            - example
+            - examples
+        - required
+      - responses[]
+        - description
+        - headers[]
+          - map of name -> header
+            - description
+            - type
+            - format
+            - JSON-schema style restrictions
+            - default value
+        - content
+          - key: mimetype, value:
+            - schema
+            - example
+            - examples
+        - links
+          - key: link name, value:
+            - href || operation ID
+            - parameters
+            - headers
+            - description
+      - server *override*
+      - deprecated (bool)
+      - security
