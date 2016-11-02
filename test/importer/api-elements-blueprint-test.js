@@ -399,17 +399,129 @@ describe('API Elements API Blueprint Importer', () => {
   });
 
   context('Request', () => {
-    it('should have blank name', () => {
+    before((done) => {
+      const APIB = `
+        FORMAT: 1A
+
+        # API Title
+        # Group My Resources
+        ## Resource [/resources]
+        ### Get the resource [GET]
+        + Request Search (application/json)
+
+            + Attributes
+
+                + tag: Test - Filter resources by tag
+
+        + Response 200 (application/json)
+
+            + Attributes
+
+                + id: 123`;
+
+      parseApi(APIB, (err, parsed) => {
+        api = parsed;
+        done(err);
+      });
+    });
+
+    it('should exist', () => {
       expect(api)
-        .to.have.deep.property('resources[0].actions[0].examples[0].request.name')
-        .to.equal('');
+        .to.have.deep.property('resources[0].actions[0].examples[0].request')
+        .to.exist;
+    });
+
+    it('should have a name', () => {
+      expect(api)
+        .to.have.deep.property(
+          'resources[0].actions[0].examples[0].request.name')
+        .to.equal('Search');
+    });
+
+    it('should have a content type', () => {
+      expect(api)
+        .to.have.deep.property(
+          'resources[0].actions[0].examples[0].request.contentType')
+        .to.equal('application/json');
+    });
+
+    it('should have a body', () => {
+      expect(api)
+        .to.have.deep.property(
+          'resources[0].actions[0].examples[0].request.body')
+        .to.exist;
+
+      const body = JSON.parse(
+        api.resources[0].actions[0].examples[0].request.body);
+
+      expect(body)
+        .to.deep.equal({
+          tag: 'Test'
+        });
+    });
+
+    it('should have a body schema', () => {
+      expect(api)
+        .to.have.deep.property(
+          'resources[0].actions[0].examples[0].request.bodySchema')
+        .to.exist;
+    });
+
+    context('Implied request', () => {
+      before((done) => {
+        const APIB = `
+          FORMAT: 1A
+
+          # API Title
+          # Group My Resources
+          ## Resource [/resource/{id}]
+          ### Get the resource [GET]
+          + Response 200 (application/json)
+
+              + Attributes
+
+                  + id: 123`;
+
+        parseApi(APIB, (err, parsed) => {
+          api = parsed;
+          done(err);
+        });
+      });
+
+      it('should exist', () => {
+        expect(api)
+          .to.have.deep.property('resources[0].actions[0].examples[0].request')
+          .to.exist;
+      });
+
+      it('should have blank name', () => {
+        expect(api)
+          .to.have.deep.property(
+            'resources[0].actions[0].examples[0].request.name')
+          .to.equal('');
+      });
+
+      it('should not have a content type', () => {
+        expect(api)
+          .to.have.deep.property(
+            'resources[0].actions[0].examples[0].request.contentType')
+          .to.equal(undefined);
+      });
+
+      it('should not have a body', () => {
+        expect(api)
+          .to.have.deep.property(
+            'resources[0].actions[0].examples[0].request.body')
+          .to.equal(undefined);
+      });
     });
   });
 
   context('Response', () => {
     it('should have a body', () => {
       expect(api)
-        .to.have.deep.property('resources[0].actions[0].examples[0].response.body')
+        .to.have.deep.property(
+          'resources[0].actions[0].examples[0].response.body')
         .to.not.be.empty;
     });
   });

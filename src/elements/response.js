@@ -1,41 +1,14 @@
-const Action = require('./action');
-const NamedElement = require('./named-element');
 const defaults = require('lodash.defaults');
+const NamedElement = require('./named-element');
+const TransactionMixin = require('./transaction-mixin');
 
-module.exports = class Response extends NamedElement {
+module.exports = class Response extends TransactionMixin(NamedElement) {
   constructor(options) {
     defaults(options, {
-      name: 'Request',
+      name: '',
       statusCode: 200,
-      headers: [],
-      body: '',
-      bodySourcemap: null,
-      _sourcemap: null
+      statusCodeSourcemap: null
     });
     super(options);
-  }
-
-  get contentType() {
-    return this.headers
-      .filter((header) => header.name.toLowerCase() === 'content-type')
-      .map((header) => header.example)[0];
-  }
-
-  get contentTypeSourcemap() {
-    return this.headers
-      .filter((header) => header.name.toLowerCase() === 'content-type')
-      .map((header) => header.sourcemap)[0] || this.sourcemap;
-  }
-
-  get sourcemap() {
-    return this._sourcemap || this.bodySourcemap || this.schemaSourcemap;
-  }
-
-  get bodySchema() {
-    return this.ancestor(Action).responseBodySchema;
-  }
-
-  get bodySchemaSourcemap() {
-    return this.ancestor(Action).responseBodySchemaSourcemap;
   }
 };
