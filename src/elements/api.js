@@ -95,6 +95,26 @@ module.exports = class Api extends NamedElement {
     }
   }
 
+  *uriTemplateElements() {
+    for (const resource of this.resources) {
+      if (resource.hasOwnUriTemplate) {
+        yield resource;
+      }
+
+      for (const action of resource.actions) {
+        if (action.hasOwnUriTemplate) {
+          yield action;
+        }
+
+        for (const example of action.examples) {
+          if (example.request && example.request.hasOwnUriTemplate) {
+            yield example.request;
+          }
+        }
+      }
+    }
+  }
+
   *uriParams() {
     for (const resource of this.resources) {
       if (resource.hasOwnUriParams) {

@@ -298,7 +298,9 @@ function handleResponseElement(parent, element) {
   getHeaders(response, element);
   getAssets(response, element);
 
-  response.statusCode = v(element, 'attributes.statusCode', 200);
+  response.statusCode = parseInt(
+    v(element, 'attributes.statusCode', '200'), 10);
+  response.statusCodeSourcemap = s(element, 'attributes.statusCode');
 
   return response;
 }
