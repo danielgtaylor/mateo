@@ -6,6 +6,7 @@ const Action = require('../elements/action');
 const Example = require('../elements/example');
 const Request = require('../elements/request');
 const Response = require('../elements/response');
+const Header = require('../elements/header');
 const UriParameter = require('../elements/uri-parameter');
 
 const get = require('lodash.get');
@@ -270,13 +271,12 @@ function getAssets(instance, element) {
 function getHeaders(instance, element) {
   instance.headers = v(element, 'attributes.headers', [])
     .map((member) => {
-      return {
+      return new Header({
         name: v(member, 'content.key'),
         description: v(member, 'meta.description'),
         example: v(member, 'content.value'),
-        sourcemap: s(member) || s(member, 'content.key') ||
-          s(member, 'content.value')
-      };
+        sourcemap: s(member)
+      });
     });
 }
 

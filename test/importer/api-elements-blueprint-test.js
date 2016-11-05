@@ -244,6 +244,18 @@ describe('API Elements API Blueprint Importer', () => {
         .to.equal(api);
     });
 
+    it('should have an ID', () => {
+      expect(api)
+        .to.have.deep.property('resources[0].id')
+        .to.equal('Resource');
+    });
+
+    it('should have a URL-safe ID', () => {
+      expect(api)
+        .to.have.deep.property('resources[0].urlSafeId')
+        .to.equal('resource');
+    });
+
     it('should have a name', () => {
       expect(api)
         .to.have.deep.property('resources[0].name')
@@ -319,6 +331,18 @@ describe('API Elements API Blueprint Importer', () => {
         .to.equal(api.resources[0]);
     });
 
+    it('should have an ID', () => {
+      expect(api)
+        .to.have.deep.property('resources[0].actions[0].id')
+        .to.equal('Resource > Get the resource');
+    });
+
+    it('should have a URL-safe ID', () => {
+      expect(api)
+        .to.have.deep.property('resources[0].actions[0].urlSafeId')
+        .to.equal('resource-get-the-resource');
+    });
+
     it('should have a name', () => {
       expect(api)
         .to.have.deep.property('resources[0].actions[0].name')
@@ -356,6 +380,12 @@ describe('API Elements API Blueprint Importer', () => {
         });
       });
 
+      it('should have an ID', () => {
+        expect(api)
+          .to.have.deep.property('resources[0].actions[0].id')
+          .to.equal('Resource > PUT');
+      });
+
       it('should properly set the method', () => {
         expect(api)
           .to.have.deep.property('resources[0].actions[0].method')
@@ -383,6 +413,25 @@ describe('API Elements API Blueprint Importer', () => {
         api = parsed;
         done(err);
       });
+    });
+
+    it('should have an action as parent', () => {
+      expect(api)
+        .to.have.deep.property('resources[0].actions[0].examples[0]')
+        .to.have.property('parent')
+        .to.equal(api.resources[0].actions[0]);
+    });
+
+    it('should have an ID', () => {
+      expect(api)
+        .to.have.deep.property('resources[0].actions[0].examples[0].id')
+        .to.equal('Resource > Get the resource > Example');
+    });
+
+    it('should have a URL-safe ID', () => {
+      expect(api)
+        .to.have.deep.property('resources[0].actions[0].examples[0].urlSafeId')
+        .to.equal('resource-get-the-resource-example');
     });
 
     it('should have a request', () => {
@@ -425,10 +474,24 @@ describe('API Elements API Blueprint Importer', () => {
       });
     });
 
-    it('should exist', () => {
+    it('should have an example as parent', () => {
       expect(api)
         .to.have.deep.property('resources[0].actions[0].examples[0].request')
-        .to.exist;
+        .to.have.property('parent')
+        .to.equal(api.resources[0].actions[0].examples[0]);
+    });
+
+    it('should have an ID', () => {
+      expect(api)
+        .to.have.deep.property('resources[0].actions[0].examples[0].request.id')
+        .to.equal('Resource > Get the resource > Example > Search');
+    });
+
+    it('should have a URL-safe ID', () => {
+      expect(api)
+        .to.have.deep.property(
+          'resources[0].actions[0].examples[0].request.urlSafeId')
+        .to.equal('resource-get-the-resource-example-search');
     });
 
     it('should have a name', () => {
@@ -443,6 +506,17 @@ describe('API Elements API Blueprint Importer', () => {
         .to.have.deep.property(
           'resources[0].actions[0].examples[0].request.contentType')
         .to.equal('application/json');
+    });
+
+    it('should have headers', () => {
+      expect(api)
+        .to.have.deep.property(
+          'resources[0].actions[0].examples[0].request.headers');
+
+      const headers = api.resources[0].actions[0].examples[0].request.headers;
+
+      expect(headers.map(header => `${header.name}: ${header.example}`))
+        .to.deep.equal(['Content-Type: application/json']);
     });
 
     it('should have a body', () => {
@@ -494,6 +568,12 @@ describe('API Elements API Blueprint Importer', () => {
           .to.exist;
       });
 
+      it('should have an ID', () => {
+        expect(api)
+          .to.have.deep.property('resources[0].actions[0].examples[0].request.id')
+          .to.equal('Resource > Get the resource > Example > Request');
+      });
+
       it('should have blank name', () => {
         expect(api)
           .to.have.deep.property(
@@ -518,6 +598,33 @@ describe('API Elements API Blueprint Importer', () => {
   });
 
   context('Response', () => {
+    it('should have an example as parent', () => {
+      expect(api)
+        .to.have.deep.property('resources[0].actions[0].examples[0].response')
+        .to.have.property('parent')
+        .to.equal(api.resources[0].actions[0].examples[0]);
+    });
+
+    it('should have an ID', () => {
+      expect(api)
+        .to.have.deep.property('resources[0].actions[0].examples[0].response.id')
+        .to.equal('Resource > Get the resource > Example > Response 200');
+    });
+
+    it('should have a URL-safe ID', () => {
+      expect(api)
+        .to.have.deep.property(
+          'resources[0].actions[0].examples[0].response.urlSafeId')
+        .to.equal('resource-get-the-resource-example-response-200');
+    });
+
+    it('should have an HTTP status code', () => {
+      expect(api)
+        .to.have.deep.property(
+          'resources[0].actions[0].examples[0].response.statusCode')
+        .to.equal(200);
+    });
+
     it('should have a body', () => {
       expect(api)
         .to.have.deep.property(

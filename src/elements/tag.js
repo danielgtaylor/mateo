@@ -11,6 +11,7 @@ module.exports = class Tag extends NamedElement {
 
   toJSON() {
     return {
+      id: this.id,
       name: this.name,
       description: this.description
     };

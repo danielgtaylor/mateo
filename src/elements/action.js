@@ -6,8 +6,6 @@ module.exports = class Action extends UriBaseElement {
     defaults(options, {
       name: 'Action',
       tags: [],
-      Id: null,
-      IdSourcemap: null,
       method: null,
       methodSourcemap: null,
       deprecated: null,
@@ -25,16 +23,34 @@ module.exports = class Action extends UriBaseElement {
 
   toJSON() {
     return {
+      id: this.id,
       name: this.name,
       description: this.description,
-      tags: (this.tags || []).map((tag) => tag.name),
+      tags: this.tags.map(tag => tag.name),
+      method: this.method,
       uriTemplate: this._uriTemplate,
       uriParams: this._uriParams,
-      uriParamsSchema: this.uriParamsSchema
+      uriParamsSchema: this.uriParamsSchema,
+      deprecated: this.deprecated,
+      requestBodySchema: this.requestBodySchema,
+      responseBodySchema: this.responseBodySchema,
+      examples: this.examples
     };
   }
 
   get sourcemap() {
     return super.sourcemap || this.methodSourcemap;
+  }
+
+  get id() {
+    let id = '';
+
+    if (this.parent) {
+      id += `${this.parent.id} > `;
+    }
+
+    id += `${this.name || this.method}`;
+
+    return this.getUniqueId(id);
   }
 };
