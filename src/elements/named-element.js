@@ -15,4 +15,8 @@ module.exports = class NamedElement extends BaseElement {
   get sourcemap() {
     return super.sourcemap || this.nameSourcemap || this.descriptionSourcemap;
   }
+
+  get id() {
+    return this.getUniqueId(this.name);
+  }
 };
