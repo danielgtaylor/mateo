@@ -1,13 +1,19 @@
+const ApiElements = require('./importer/api-elements');
 const fs = require('fs');
 const minim = require('minim').namespace()
   .use(require('minim-parse-result'));
 const SwaggerParser = require('fury-adapter-swagger');
-const ApiElements = require('./importer/api-elements');
+const {transcludeString} = require('hercule');
 
 let drafter = null;
 
-function parse(apiDescription, done) {
+function parse(apiDescription, options, done) {
   let imported;
+
+  if (typeof options === 'function') {
+    done = options;
+    options = {};
+  }
 
   if (SwaggerParser.detect(apiDescription)) {
     SwaggerParser.parse({
@@ -21,7 +27,7 @@ function parse(apiDescription, done) {
       }
 
       try {
-        imported = ApiElements.import(result.toRefract());
+        imported = ApiElements.import(result.toRefract(), null, apiDescription);
       } catch (importErr) {
         return done(importErr);
       }
@@ -31,7 +37,7 @@ function parse(apiDescription, done) {
           'api-desc.json', JSON.stringify(imported, null, 2), 'utf8');
       }
 
-      done(null, imported);
+      done(null, imported, apiDescription);
     });
   } else {
     // Probably API Blueprint
@@ -40,25 +46,31 @@ function parse(apiDescription, done) {
       drafter = require('drafter');
     }
 
-    drafter.parse(apiDescription, {exportSourcemap: true}, (err, parsed) => {
-      if (err) return done(err);
+    const herculeOptions = {
+      source: options.filename
+    };
 
-      if (process.env.DUMP) {
-        fs.writeFileSync('apib.json', JSON.stringify(parsed, null, 2), 'utf8');
-      }
+    transcludeString(apiDescription, herculeOptions, (err, transcluded, sources, sourcemap) => {
+      drafter.parse(transcluded, {exportSourcemap: true}, (err, parsed) => {
+        if (err) return done(err);
 
-      try {
-        imported = ApiElements.import(parsed);
-      } catch (importErr) {
-        return done(importErr);
-      }
+        if (process.env.DUMP) {
+          fs.writeFileSync('apib.json', JSON.stringify(parsed, null, 2), 'utf8');
+        }
 
-      if (process.env.DUMP) {
-        fs.writeFileSync(
-          'api-desc.json', JSON.stringify(imported, null, 2), 'utf8');
-      }
+        try {
+          imported = ApiElements.import(parsed, sourcemap, transcluded);
+        } catch (importErr) {
+          return done(importErr);
+        }
 
-      done(null, imported);
+        if (process.env.DUMP) {
+          fs.writeFileSync(
+            'api-desc.json', JSON.stringify(imported, null, 2), 'utf8');
+        }
+
+        done(null, imported, transcluded);
+      });
     });
   }
 }
@@ -69,7 +81,7 @@ function parseFile(filename, done) {
       return done(err);
     }
 
-    parse(data, done);
+    parse(data, {filename}, done);
   });
 }
 

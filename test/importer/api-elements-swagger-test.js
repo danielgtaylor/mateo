@@ -22,6 +22,10 @@ describe('API Elements Swagger Importer', () => {
 
   before((done) => {
     ApiDescription.parse(SWAGGER, (err, result) => {
+      if (err) {
+        return done(err)
+      }
+
       api = result;
       done();
     });

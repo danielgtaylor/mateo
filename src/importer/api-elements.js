@@ -10,367 +10,448 @@ const Header = require('../elements/header');
 const UriParameter = require('../elements/uri-parameter');
 
 const get = require('lodash.get');
+const {SourceMapConsumer} = require('source-map');
 
-/*
-  Get the value of a refract element at the given path. For example,
-  a `path` of `foo.bar` would search for a property named `foo`,
-  then within that property look for another property named `bar`, then
-  if that element has been refracted it will find its `content` and
-  return the value.
-*/
-function v(root, path, defaultValue) {
-  let element = path ? get(root, path) : root;
-
-  while (element && element.content !== undefined) {
-    element = element.content;
+class ApiElementsImporter {
+  constructor(sourcemap, source) {
+    this.smc = sourcemap ? new SourceMapConsumer(sourcemap) : null;
+    this.source = source;
   }
 
-  if (element && Object.keys(element).length === 1 && typeof(element.element) === 'string') {
-    // This is an element but has no `content` key
-    element = undefined;
-  }
+  /*
+    Get the value of a refract element at the given path. For example,
+    a `path` of `foo.bar` would search for a property named `foo`,
+    then within that property look for another property named `bar`, then
+    if that element has been refracted it will find its `content` and
+    return the value.
+  */
+  v(root, path, defaultValue) {
+    let element = path ? get(root, path) : root;
 
-  return (element === undefined) ? defaultValue : element;
-}
-
-/*
-  Get the source map (if present) of a path in the element.
-*/
-function s(root, path) {
-  return v(root, `${path ? path + '.' : ''}attributes.sourceMap[0]`, null);
-}
-
-/*
-  Determine whether an element contains the class name in `meta.classes`.
-*/
-function hasClass(element, className) {
-  return v(element, 'meta.classes', []).indexOf(className) !== -1;
-}
-
-function importApiElements(element) {
-  const contents = handleNestedContent(null, element);
-
-  // There should only ever be one API category
-  const api = contents.filter((item) => item instanceof Api)[0];
-
-  return api;
-}
-
-/*
-  Get the name and description of an element, using a default value for
-  the name if none is given.
-*/
-function getNameDescription(instance, element, defaultValue='') {
-  instance.name = v(element, 'meta.title', defaultValue);
-  instance.description = v(element, 'meta.description', '');
-
-  instance.nameSourcemap = s(element, 'meta.title');
-  instance.descriptionSourcemap = s(element, 'meta.description');
-
-  for (const item of v(element, 'content', [])) {
-    switch (item.element) {
-    case 'copy':
-      instance.description = `${instance.description}\n${v(item)}`.trim();
-      // Resetting the sourcemap isn't technically correct, but it works
-      // in practice and is easier than combining them.
-      instance.descriptionSourcemap = s(item);
-      break;
-    }
-  }
-}
-
-/*
-  Transform a list of elements into a list of instances. Useful to handle
-  e.g. element.contents for elements which contain other elements.
-*/
-function handleNested(parent, elementList) {
-  let results = [];
-
-  for (const item of elementList ? elementList : []) {
-    if (item === undefined) {
-      continue;
+    while (element && element.content !== undefined) {
+      element = element.content;
     }
 
-    switch (item.element) {
-    case 'category':
-      if (hasClass(item, 'api')) {
-        results.push(handleApiElement(item));
-      } else if (hasClass(item, 'resourceGroup')) {
-        const [tag, resources] = handleTagElement(parent, item);
+    if (element && Object.keys(element).length === 1 && typeof(element.element) === 'string') {
+      // This is an element but has no `content` key
+      element = undefined;
+    }
 
-        results.push(tag);
+    return (element === undefined) ? defaultValue : element;
+  }
 
-        for (const resource of resources) {
-          results.push(resource);
+  /*
+    Get the source map (if present) of a path in the element.
+  */
+  s(root, path) {
+    let sourcemap =  this.v(root,
+      `${path ? path + '.' : ''}attributes.sourceMap[0]`, null);
+
+    if (sourcemap) {
+      sourcemap = this.convertSourcemap(sourcemap);
+    }
+
+    return sourcemap;
+  }
+
+  /*
+    Determine whether an element contains the class name in `meta.classes`.
+  */
+  hasClass(element, className) {
+    return this.v(element, 'meta.classes', []).indexOf(className) !== -1;
+  }
+
+  /*
+    Convert from API Elements sourcemap into Mateo sourcemap.
+  */
+  convertSourcemap(sourcemap) {
+    const newSourcemap = [];
+
+    for (const entry of sourcemap) {
+      let line = 1;
+      let column = 0;
+
+      for (let i = 0; i < entry[0]; i++) {
+        column++;
+        if (this.source[i] === '\n') {
+          line++;
+          column = 0;
         }
       }
-      break;
-    case 'resource':
-      results.push(handleResourceElement(parent, item));
-      break;
-    case 'transition':
-      results.push(handleActionElement(parent, item));
-      break;
-    case 'httpTransaction':
-      results.push(handleExampleElement(parent, item));
-      break;
-    case 'httpRequest':
-      results.push(handleRequestElement(parent, item));
-      break;
-    case 'httpResponse':
-      results.push(handleResponseElement(parent, item));
-      break;
+
+      if (this.smc) {
+        let original;
+
+        // Rather than just getting the original position we have to loop and
+        // find the LAST original position element. These are in generated-file
+        // order so we just set it until it can't be set anymore.
+        this.smc.eachMapping((m) => {
+          if (m.generatedLine <= line) {
+            original = m;
+          }
+        });
+
+        newSourcemap.push({
+          original: {
+            source: original.source,
+            line: original.originalLine,
+            column: original.originalColumn,
+          },
+          generated: {
+            pos: sourcemap[0][0],
+            line,
+            column
+          },
+          length: sourcemap[0][1]
+        });
+      } else {
+        newSourcemap.push({
+          original: {
+            source: '',
+            line,
+            column
+          },
+          generated: {
+            pos: sourcemap[0][0],
+            line,
+            column
+          },
+          length: sourcemap[0][1]
+        });
+      }
     }
+
+    return newSourcemap;
   }
 
-  return results;
-}
+  process(element) {
+    const contents = this.handleNestedContent(null, element);
 
-/*
-  Shortcut to call `handleNested` on the element's content array
-*/
-function handleNestedContent(parent, element) {
-  return handleNested(parent, v(element, 'content', []));
-}
-
-function handleApiElement(element) {
-  const api = new Api();
-
-  getNameDescription(api, element);
-
-  for(const item of v(element, 'attributes.meta', [])) {
-    if (v(item, 'content.key', '') === 'HOST') {
-      api.servers.push(new Server({
-        uriTemplate: v(item, 'content.value'),
-        uriTemplateSourcemap: s(item)
-      }));
-    }
+    // There should only ever be one API category
+    return contents.filter((item) => item instanceof Api)[0];
   }
 
-  const contents = handleNestedContent(api, element);
-  api.tags = contents.filter((item) => item instanceof Tag);
-  api.resources = contents.filter((item) => item instanceof Resource);
+  /*
+    Get the name and description of an element, using a default value for
+    the name if none is given.
+  */
+  getNameDescription(instance, element, defaultValue='') {
+    instance.name = this.v(element, 'meta.title', defaultValue);
+    instance.description = this.v(element, 'meta.description', '');
 
-  return api;
-}
+    instance.nameSourcemap = this.s(element, 'meta.title');
+    instance.descriptionSourcemap = this.s(element, 'meta.description');
 
-function handleTagElement(parent, element) {
-  const tag = new Tag({parent});
-
-  getNameDescription(tag, element);
-
-  const contents = handleNestedContent(tag, element);
-
-  const resources = contents.filter((item) => item instanceof Resource);
-
-  resources.forEach((resource) => {
-    // Resource parent should be the API, not the tag
-    resource.parent = parent;
-
-    if (resource.tags === undefined) {
-      resource.tags = [];
-    }
-
-    if (tag.name) {
-      resource.tags.push(tag);
-    }
-  });
-
-  return [tag, resources];
-}
-
-function handleResourceElement(parent, element) {
-  const resource = new Resource({parent});
-
-  getNameDescription(resource, element);
-
-  resource.uriTemplate = v(element, 'attributes.href', '');
-  resource.uriTemplateSourcemap = s(element, 'attributes.href');
-
-  getUriParameters(resource, element);
-
-  const contents = handleNestedContent(resource, element);
-  resource.actions = contents.filter((item) => item instanceof Action);
-
-  return resource;
-}
-
-function handleActionElement(parent, element) {
-  const action = new Action({parent});
-
-  getNameDescription(action, element);
-
-  action.uriTemplate = v(element, 'attributes.href');
-  action.uriTemplateSourcemap = s(element, 'attributes.href');
-
-  for (const transaction of v(element, '', [])) {
-    if (transaction && transaction.element === 'httpTransaction') {
-      for (const asset of v(transaction, '', [])) {
-        if (asset && asset.element === 'httpRequest') {
-          if (!action.method) {
-            action.method = v(asset, 'attributes.method');
-            action.methodSourcemap = s(asset, 'attributes.method');
-          }
-
-          if (!action.requestBodySchema) {
-            const requestBodySchema = v(asset, 'content', []).filter(
-              (item) => hasClass(item, 'messageBodySchema')
-            )[0];
-            action.requestBodySchema = v(requestBodySchema);
-            action.requestBodySchemaSourcemap = s(requestBodySchema);
-          }
-        } else if (asset && asset.element === 'httpResponse') {
-          if (!action.responseBodySchema) {
-            const responseBodySchema = v(asset, 'content', []).filter(
-              (item) => hasClass(item, 'messageBodySchema')
-            )[0];
-            action.responseBodySchema = v(responseBodySchema);
-            action.responseBodySchemaSourcemap = s(responseBodySchema);
-          }
-        }
+    for (const item of this.v(element, 'content', [])) {
+      switch (item.element) {
+      case 'copy':
+        instance.description = `${instance.description}\n${this.v(item)}`.trim();
+        // Resetting the sourcemap isn't technically correct, but it works
+        // in practice and is easier than combining them.
+        instance.descriptionSourcemap = this.s(item);
+        break;
       }
     }
   }
 
-  if (!action.method) {
-    // Maybe missing a request, so let's assume this is a GET.
-    // This is just a limitation of API Elements (the format).
-    action.method = 'GET';
+  /*
+    Transform a list of elements into a list of instances. Useful to handle
+    e.g. element.contents for elements which contain other elements.
+  */
+  handleNested(parent, elementList) {
+    let results = [];
+
+    for (const item of elementList ? elementList : []) {
+      if (item === undefined) {
+        continue;
+      }
+
+      switch (item.element) {
+      case 'category':
+        if (this.hasClass(item, 'api')) {
+          results.push(this.handleApiElement(item));
+        } else if (this.hasClass(item, 'resourceGroup')) {
+          const [tag, resources] = this.handleTagElement(parent, item);
+
+          results.push(tag);
+
+          for (const resource of resources) {
+            results.push(resource);
+          }
+        }
+        break;
+      case 'resource':
+        results.push(this.handleResourceElement(parent, item));
+        break;
+      case 'transition':
+        results.push(this.handleActionElement(parent, item));
+        break;
+      case 'httpTransaction':
+        results.push(this.handleExampleElement(parent, item));
+        break;
+      case 'httpRequest':
+        results.push(this.handleRequestElement(parent, item));
+        break;
+      case 'httpResponse':
+        results.push(this.handleResponseElement(parent, item));
+        break;
+      }
+    }
+
+    return results;
   }
 
-  getUriParameters(action, element, parent);
+  /*
+    Shortcut to call `handleNested` on the element's content array
+  */
+  handleNestedContent(parent, element) {
+    return this.handleNested(parent, this.v(element, 'content', []));
+  }
 
-  const contents = handleNestedContent(action, element);
-  action.examples = contents.filter((item) => item instanceof Example);
+  handleApiElement(element) {
+    const api = new Api();
 
-  return action;
-}
+    this.getNameDescription(api, element);
 
-function handleExampleElement(parent, element) {
-  const example = new Example({parent});
+    for(const item of this.v(element, 'attributes.meta', [])) {
+      if (this.v(item, 'content.key', '') === 'HOST') {
+        api.servers.push(new Server({
+          uriTemplate: this.v(item, 'content.value'),
+          uriTemplateSourcemap: this.s(item)
+        }));
+      }
+    }
 
-  const contents = handleNestedContent(example, element);
-  example.request = contents.filter((item) => item instanceof Request)[0];
-  example.response = contents.filter((item) => item instanceof Response)[0];
+    const contents = this.handleNestedContent(api, element);
+    api.tags = contents.filter((item) => item instanceof Tag);
+    api.resources = contents.filter((item) => item instanceof Resource);
 
-  return example;
-}
+    return api;
+  }
 
-function getAssets(instance, element) {
-  const assets = v(element, 'content', []).filter(
-    (item) => item && item.element === 'asset');
+  handleTagElement(parent, element) {
+    const tag = new Tag({parent});
 
-  const body = assets.filter(
-    (item) => hasClass(item, 'messageBody')
-  )[0];
+    this.getNameDescription(tag, element);
 
-  instance.body = v(body);
-  instance.bodySourcemap = s(body);
-}
+    const contents = this.handleNestedContent(tag, element);
 
-function getHeaders(instance, element) {
-  instance.headers = v(element, 'attributes.headers', [])
-    .map((member) => {
-      return new Header({
-        name: v(member, 'content.key'),
-        description: v(member, 'meta.description'),
-        example: v(member, 'content.value'),
-        sourcemap: s(member)
-      });
+    const resources = contents.filter((item) => item instanceof Resource);
+
+    resources.forEach((resource) => {
+      // Resource parent should be the API, not the tag
+      resource.parent = parent;
+
+      if (resource.tags === undefined) {
+        resource.tags = [];
+      }
+
+      if (tag.name) {
+        resource.tags.push(tag);
+      }
     });
-}
 
-function handleRequestElement(parent, element) {
-  const request = new Request({parent});
-
-  getNameDescription(request, element, '');
-  getUriParameters(request, element, parent);
-  getHeaders(request, element);
-  getAssets(request, element);
-
-  return request;
-}
-
-function handleResponseElement(parent, element) {
-  const response = new Response({parent});
-
-  getNameDescription(response, element, '');
-  getHeaders(response, element);
-  getAssets(response, element);
-
-  response.statusCode = parseInt(
-    v(element, 'attributes.statusCode', '200'), 10);
-  response.statusCodeSourcemap = s(element, 'attributes.statusCode');
-
-  return response;
-}
-
-function getUriParameters(instance, element) {
-  const parameters = [];
-  let schema = {
-    '$schema': 'http://json-schema.org/draft-04/schema#',
-    'type': 'object',
-    'properties': {},
-    'additionalProperties': false
-  };
-  let ancestor = instance.parent;
-
-  while (ancestor && !ancestor.uriParamsSchema) {
-    ancestor = ancestor.parent;
+    return [tag, resources];
   }
 
-  if (ancestor && ancestor.uriParamsSchema) {
-    schema = JSON.parse(ancestor.uriParamsSchema);
+  handleResourceElement(parent, element) {
+    const resource = new Resource({parent});
+
+    this.getNameDescription(resource, element);
+
+    resource.uriTemplate = this.v(element, 'attributes.href', '');
+    resource.uriTemplateSourcemap = this.s(element, 'attributes.href');
+
+    this.getUriParameters(resource, element);
+
+    const contents = this.handleNestedContent(resource, element);
+    resource.actions = contents.filter((item) => item instanceof Action);
+
+    return resource;
   }
 
-  for (const member of v(element, 'attributes.hrefVariables', [])) {
-    let parameter = handleHrefVariable(member, schema);
-    parameter.parent = instance;
-    parameters.push(parameter);
-  }
+  handleActionElement(parent, element) {
+    const action = new Action({parent});
 
-  if (parameters.length) {
-    instance.uriParams = parameters;
-    instance.uriParamsSchema = JSON.stringify(schema, null, 2);
-  }
-}
+    this.getNameDescription(action, element);
 
-function handleHrefVariable(element, allSchema) {
-  const parameter = new UriParameter();
+    action.uriTemplate = this.v(element, 'attributes.href');
+    action.uriTemplateSourcemap = this.s(element, 'attributes.href');
 
-  parameter.sourcemap = s(element);
+    for (const transaction of this.v(element, '', [])) {
+      if (transaction && transaction.element === 'httpTransaction') {
+        for (const asset of this.v(transaction, '', [])) {
+          if (asset && asset.element === 'httpRequest') {
+            if (!action.method) {
+              action.method = this.v(asset, 'attributes.method');
+              action.methodSourcemap = this.s(asset, 'attributes.method');
+            }
 
-  parameter.name = v(element, 'content.key', '');
-  parameter.nameSourcemap = s(element, 'content.key');
-
-  parameter.description = v(element, 'attributes.description', '');
-  parameter.descriptionSourcemap = s(element, 'attributes.description');
-
-  let type = v(element, 'content.value.element', 'string');
-  let required = v(element, 'attributes.typeAttributes', [])
-    .indexOf('required') !== -1;
-
-  let schema = {type};
-
-  allSchema.properties[parameter.name] = schema;
-
-  if (required) {
-    if (allSchema.required === undefined) {
-      allSchema.required = [];
+            if (!action.requestBodySchema) {
+              const requestBodySchema = this.v(asset, 'content', []).filter(
+                (item) => this.hasClass(item, 'messageBodySchema')
+              )[0];
+              action.requestBodySchema = this.v(requestBodySchema);
+              action.requestBodySchemaSourcemap = this.s(requestBodySchema);
+            }
+          } else if (asset && asset.element === 'httpResponse') {
+            if (!action.responseBodySchema) {
+              const responseBodySchema = this.v(asset, 'content', []).filter(
+                (item) => this.hasClass(item, 'messageBodySchema')
+              )[0];
+              action.responseBodySchema = this.v(responseBodySchema);
+              action.responseBodySchemaSourcemap = this.s(responseBodySchema);
+            }
+          }
+        }
+      }
     }
 
-    allSchema.required.push(parameter.name);
+    if (!action.method) {
+      // Maybe missing a request, so let's assume this is a GET.
+      // This is just a limitation of API Elements (the format).
+      action.method = 'GET';
+    }
+
+    this.getUriParameters(action, element, parent);
+
+    const contents = this.handleNestedContent(action, element);
+    action.examples = contents.filter((item) => item instanceof Example);
+
+    return action;
   }
 
-  if (element && element.content && element.content.value && element.content.value.element === 'enum') {
-    parameter.example = v(element, 'content.value.content[0]');
-  } else {
-    parameter.example = v(element, 'content.value', '');
+  handleExampleElement(parent, element) {
+    const example = new Example({parent});
+
+    const contents = this.handleNestedContent(example, element);
+    example.request = contents.filter((item) => item instanceof Request)[0];
+    example.response = contents.filter((item) => item instanceof Response)[0];
+
+    return example;
   }
 
-  parameter.exampleSourcemap = s(element, 'content.value');
+  getAssets(instance, element) {
+    const assets = this.v(element, 'content', []).filter(
+      (item) => item && item.element === 'asset');
 
-  return parameter;
+    const body = assets.filter(
+      (item) => this.hasClass(item, 'messageBody')
+    )[0];
+
+    instance.body = this.v(body);
+    instance.bodySourcemap = this.s(body);
+  }
+
+  getHeaders(instance, element) {
+    instance.headers = this.v(element, 'attributes.headers', [])
+      .map((member) => {
+        return new Header({
+          name: this.v(member, 'content.key'),
+          description: this.v(member, 'meta.description'),
+          example: this.v(member, 'content.value'),
+          sourcemap: this.s(member)
+        });
+      });
+  }
+
+  handleRequestElement(parent, element) {
+    const request = new Request({parent});
+
+    this.getNameDescription(request, element, '');
+    this.getUriParameters(request, element, parent);
+    this.getHeaders(request, element);
+    this.getAssets(request, element);
+
+    return request;
+  }
+
+  handleResponseElement(parent, element) {
+    const response = new Response({parent});
+
+    this.getNameDescription(response, element, '');
+    this.getHeaders(response, element);
+    this.getAssets(response, element);
+
+    response.statusCode = parseInt(
+      this.v(element, 'attributes.statusCode', '200'), 10);
+    response.statusCodeSourcemap = this.s(element, 'attributes.statusCode');
+
+    return response;
+  }
+
+  getUriParameters(instance, element) {
+    const parameters = [];
+    let schema = {
+      '$schema': 'http://json-schema.org/draft-04/schema#',
+      'type': 'object',
+      'properties': {},
+      'additionalProperties': false
+    };
+    let ancestor = instance.parent;
+
+    while (ancestor && !ancestor.uriParamsSchema) {
+      ancestor = ancestor.parent;
+    }
+
+    if (ancestor && ancestor.uriParamsSchema) {
+      schema = JSON.parse(ancestor.uriParamsSchema);
+    }
+
+    for (const member of this.v(element, 'attributes.hrefVariables', [])) {
+      let parameter = this.handleHrefVariable(member, schema);
+      parameter.parent = instance;
+      parameters.push(parameter);
+    }
+
+    if (parameters.length) {
+      instance.uriParams = parameters;
+      instance.uriParamsSchema = JSON.stringify(schema, null, 2);
+    }
+  }
+
+  handleHrefVariable(element, allSchema) {
+    const parameter = new UriParameter();
+
+    parameter.sourcemap = this.s(element);
+
+    parameter.name = this.v(element, 'content.key', '');
+    parameter.nameSourcemap = this.s(element, 'content.key');
+
+    parameter.description = this.v(element, 'attributes.description', '');
+    parameter.descriptionSourcemap = this.s(element, 'attributes.description');
+
+    let type = this.v(element, 'content.value.element', 'string');
+    let required = this.v(element, 'attributes.typeAttributes', [])
+      .indexOf('required') !== -1;
+
+    let schema = {type};
+
+    allSchema.properties[parameter.name] = schema;
+
+    if (required) {
+      if (allSchema.required === undefined) {
+        allSchema.required = [];
+      }
+
+      allSchema.required.push(parameter.name);
+    }
+
+    if (element && element.content && element.content.value && element.content.value.element === 'enum') {
+      parameter.example = this.v(element, 'content.value.content[0]');
+    } else {
+      parameter.example = this.v(element, 'content.value', '');
+    }
+
+    parameter.exampleSourcemap = this.s(element, 'content.value');
+
+    return parameter;
+  }
 }
 
-module.exports = {import: importApiElements};
+function importApiElements(element, sourcemap, source) {
+  const importer = new ApiElementsImporter(sourcemap, source);
+  return importer.process(element);
+}
+
+module.exports = {import: importApiElements, ApiElementsImporter};

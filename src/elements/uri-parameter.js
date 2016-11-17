@@ -21,4 +21,8 @@ module.exports = class UriParameter extends NamedElement {
   get sourcemap() {
     return super.sourcemap || this.nameSourcemap || this.exampleSourcemap;
   }
+
+  set sourcemap(sourcemap) {
+    this._sourcemap = sourcemap;
+  }
 };

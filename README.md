@@ -47,12 +47,16 @@ Mateo.parse('...', (err, result) => {
 
 ### `Mateo`
 
-#### `Mateo.parse(apiDescription, done)`
+#### `Mateo.parse(apiDescription, [options], done)`
 
-Parse an API description from a `string`. The `result` is a `ParseResult`.
+Parse an API description from a `string`. The `api` is an `Api` instance.
 
 ```js
-Mateo.parse('...', (err, result) => { /* ... */ });
+const options = {
+  filename: 'foo.yaml'
+};
+
+Mateo.parse('...', options, (err, api) => { /* ... */ });
 ```
 
 #### `Mateo.parseFile(filename, done)`

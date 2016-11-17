@@ -1,6 +1,6 @@
 {
   "name": "mateo",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Simple API Description interface",
   "main": "src/index.js",
   "directories": {
@@ -9,12 +9,14 @@
   "dependencies": {
     "drafter": "^1.1.0",
     "fury-adapter-swagger": "^0.9.6",
+    "hercule": "^3.1.0",
     "lodash.defaults": "^4.2.0",
     "lodash.get": "^4.4.2",
     "lodash.merge": "^4.6.0",
     "minim": "^0.14.2",
     "minim-parse-result": "^0.2.2",
-    "slug": "^0.9.1"
+    "slug": "^0.9.1",
+    "source-map": "^0.5.6"
   },
   "devDependencies": {
     "chai": "^3.5.0",

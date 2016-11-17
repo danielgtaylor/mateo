@@ -1,3 +1,26 @@
+# 0.4.0 - 2016-11-16
+
+- Use [Hercule]() for API Blueprint transclusion.
+- Updated source map format. They now look like:
+
+  ```js
+  {
+    original: {
+      source: 'included.apib'
+      line: 3,
+      column: 0
+    },
+    generated: {
+      pos: 45,
+      line: 5,
+      column: 0
+    },
+    length: 10
+  }
+  ```
+
+- `Mateo.parse` now takes an options object where you can set the `options.filename` when parsing string input.
+
 # 0.3.0 - 2016-11-5
 
 - All elements now have a `root` property, which is the root of the element

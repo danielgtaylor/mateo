@@ -61,7 +61,19 @@ describe('API Elements API Blueprint Importer', () => {
     it('should have a name sourcemap', () => {
       expect(api)
         .to.have.deep.property('nameSourcemap')
-        .to.deep.equal([[43, 13]]);
+        .to.deep.equal([{
+          original: {
+            column: 0,
+            line: 5,
+            source: 'string'
+          },
+          generated: {
+            column: 0,
+            line: 5,
+            pos: 43
+          },
+          length: 13
+        }]);
     });
 
     it('should have a description', () => {
