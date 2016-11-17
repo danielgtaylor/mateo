@@ -18,7 +18,8 @@ module.exports = class Api extends NamedElement {
       version: null,
       servers: [],
       tags: [],
-      resources: []
+      resources: [],
+      annotations: []
     });
     super(options);
   }
@@ -32,7 +33,8 @@ module.exports = class Api extends NamedElement {
       version: this.version,
       servers: this.servers,
       tags: this.tags,
-      resources: this.resources
+      resources: this.resources,
+      annotations: this.annotations
     };
   }
 

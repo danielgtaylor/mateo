@@ -1,13 +1,7 @@
-const Api = require('../elements/api');
-const Server = require('../elements/server');
-const Tag = require('../elements/tag');
-const Resource = require('../elements/resource');
-const Action = require('../elements/action');
-const Example = require('../elements/example');
-const Request = require('../elements/request');
-const Response = require('../elements/response');
-const Header = require('../elements/header');
-const UriParameter = require('../elements/uri-parameter');
+const {
+  Annotation, Api, Server, Tag, Resource, Action, Example, Request,
+  Response, Header, UriParameter
+} = require('../elements');
 
 const get = require('lodash.get');
 const {SourceMapConsumer} = require('source-map');
@@ -128,7 +122,10 @@ class ApiElementsImporter {
     const contents = this.handleNestedContent(null, element);
 
     // There should only ever be one API category
-    return contents.filter((item) => item instanceof Api)[0];
+    const api = contents.filter(item => item instanceof Api)[0];
+    api.annotations = contents.filter(item => item instanceof Annotation);
+
+    return api;
   }
 
   /*
@@ -167,9 +164,12 @@ class ApiElementsImporter {
       }
 
       switch (item.element) {
+      case 'annotation':
+        results.push(this.handleAnnotationElement(parent, item));
+        break;
       case 'category':
         if (this.hasClass(item, 'api')) {
-          results.push(this.handleApiElement(item));
+          results.push(this.handleApiElement(parent, item));
         } else if (this.hasClass(item, 'resourceGroup')) {
           const [tag, resources] = this.handleTagElement(parent, item);
 
@@ -208,7 +208,28 @@ class ApiElementsImporter {
     return this.handleNested(parent, this.v(element, 'content', []));
   }
 
-  handleApiElement(element) {
+  handleAnnotationElement(parent, element) {
+    const annotation = new Annotation({parent});
+
+    annotation.severity = this.v(element, 'meta.class', 'error');
+    annotation.message = this.v(element);
+    annotation.sourcemap = this.s(element);
+
+    if (annotation.severity === 'warning') {
+      // Convert severity name to Mateo's format.
+      annotation.severity = 'warn';
+    }
+
+    if (annotation.message) {
+      // Capitalize the message sentence if possible.
+      annotation.message = annotation.message[0].toUpperCase() +
+        annotation.message.slice(1);
+    }
+
+    return annotation;
+  }
+
+  handleApiElement(parent, element) {
     const api = new Api();
 
     this.getNameDescription(api, element);
@@ -223,8 +244,8 @@ class ApiElementsImporter {
     }
 
     const contents = this.handleNestedContent(api, element);
-    api.tags = contents.filter((item) => item instanceof Tag);
-    api.resources = contents.filter((item) => item instanceof Resource);
+    api.tags = contents.filter(item => item instanceof Tag);
+    api.resources = contents.filter(item => item instanceof Resource);
 
     return api;
   }
@@ -236,7 +257,7 @@ class ApiElementsImporter {
 
     const contents = this.handleNestedContent(tag, element);
 
-    const resources = contents.filter((item) => item instanceof Resource);
+    const resources = contents.filter(item => item instanceof Resource);
 
     resources.forEach((resource) => {
       // Resource parent should be the API, not the tag

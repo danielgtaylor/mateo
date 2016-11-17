@@ -1,6 +1,10 @@
+# Unreleased
+
+- Expose parser annotations via the `api.annotations` property. The sourcemaps match the new format from Mateo 0.4.0 described below.
+
 # 0.4.0 - 2016-11-16
 
-- Use [Hercule]() for API Blueprint transclusion.
+- Use [Hercule](https://github.com/jamesramsay/hercule) for API Blueprint transclusion.
 - Updated source map format. They now look like:
 
   ```js

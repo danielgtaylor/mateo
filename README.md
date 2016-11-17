@@ -18,8 +18,8 @@ To support these use cases while remaining simple, this library is read-only and
 
 Currently supported API formats:
 
-- API Blueprint
-- Swagger 2.0
+* [Swagger 2.0](http://swagger.io/specification/)
+* [API Blueprint](https://apiblueprint.org/) with support for [Hercule transclusion](https://github.com/jamesramsay/hercule)
 
 Due to the nature of various API description formats supporting different features, this library will attempt to massage various pieces to fit into common sense components without losing too much in translation. If you need 100% 1:1 accuracy, you may be better off parsing the format of your choice manually.
 
