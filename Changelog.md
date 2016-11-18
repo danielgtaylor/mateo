@@ -1,4 +1,4 @@
-# Unreleased
+# 0.5.0 - 2016-11-17
 
 - Expose parser annotations via the `api.annotations` property. The sourcemaps match the new format from Mateo 0.4.0 described below.
 - Add a new optional promise-based interface by leaving off the callback.
