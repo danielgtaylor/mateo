@@ -7,12 +7,26 @@ const {transcludeString} = require('hercule');
 
 let drafter = null;
 
-function parse(apiDescription, options, done) {
+function parse(apiDescription, options={}, done) {
   let imported;
 
   if (typeof options === 'function') {
     done = options;
     options = {};
+  }
+
+  if (arguments.length <= 2 && done === undefined) {
+    // This is the promise-based interface, called with one or two
+    // arguments and no callback. This returns a promise.
+    return new Promise((resolve, reject) => {
+      parse(apiDescription, options, (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result);
+        }
+      });
+    });
   }
 
   if (SwaggerParser.detect(apiDescription)) {

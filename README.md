@@ -38,18 +38,31 @@ Once installed, you can easily parse any supported API format:
 ```js
 import Mateo from 'mateo';
 
-Mateo.parse('...', (err, result) => {
-  console.log(result.api);
+// Usage via callbacks
+Mateo.parse('...', (err, api) => {
+  if (err) {
+    console.log(err);
+    return;
+  }
+
+  console.log(api);
 });
+
+// Usage via promises
+Mateo.parse('...').then((api) => {
+  console.log(api);
+}).catch((err) => {
+  console.log(err);
+})
 ```
 
 ## Library Documentation
 
 ### `Mateo`
 
-#### `Mateo.parse(apiDescription, [options], done)`
+#### `Mateo.parse(apiDescription, [options], [done])`
 
-Parse an API description from a `string`. The `api` is an `Api` instance.
+Parse an API description from a `string`. The `api` is an `Api` instance. If no callback `done` function is given, then the promise-based interface is used and a promise is returned.
 
 ```js
 const options = {
@@ -59,7 +72,7 @@ const options = {
 Mateo.parse('...', options, (err, api) => { /* ... */ });
 ```
 
-#### `Mateo.parseFile(filename, done)`
+#### `Mateo.parseFile(filename, [done])`
 
 Parse an API description from a file. The `api` is an `Api` instance.
 
