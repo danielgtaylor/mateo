@@ -74,30 +74,37 @@ class ApiElementsImporter {
       }
 
       if (this.smc) {
-        let original;
+        const original = this.smc.originalPositionFor({line, column});
 
-        // Rather than just getting the original position we have to loop and
-        // find the LAST original position element. These are in generated-file
-        // order so we just set it until it can't be set anymore.
-        this.smc.eachMapping((m) => {
-          if (m.generatedLine <= line) {
-            original = m;
-          }
-        });
-
-        newSourcemap.push({
-          original: {
-            source: original.source,
-            line: original.originalLine,
-            column: original.originalColumn,
-          },
-          generated: {
-            pos: sourcemap[0][0],
-            line,
-            column
-          },
-          length: sourcemap[0][1]
-        });
+        if (original) {
+          newSourcemap.push({
+            original: {
+              source: original.source,
+              line: original.line,
+              column: original.column,
+            },
+            generated: {
+              pos: sourcemap[0][0],
+              line,
+              column
+            },
+            length: sourcemap[0][1]
+          });
+        } else {
+          newSourcemap.push({
+            original: {
+              source: '',
+              line,
+              column
+            },
+            generated: {
+              pos: sourcemap[0][0],
+              line,
+              column
+            },
+            length: sourcemap[0][1]
+          });
+        }
       } else {
         newSourcemap.push({
           original: {

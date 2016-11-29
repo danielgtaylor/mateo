@@ -1,3 +1,7 @@
+# Unreleased
+
+- Upgrade to Hercule 3.2.2 for better sourcemap support from API Blueprint input with multiple referenced files.
+
 # 0.5.0 - 2016-11-17
 
 - Expose parser annotations via the `api.annotations` property. The sourcemaps match the new format from Mateo 0.4.0 described below.
