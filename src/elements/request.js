@@ -1,3 +1,4 @@
+const Action = require('./action');
 const defaults = require('lodash.defaults');
 const TransactionMixin = require('./transaction-mixin');
 const UriBaseElement = require('./uri-base');
@@ -31,5 +32,22 @@ module.exports = class Request extends TransactionMixin(UriBaseElement) {
     id += this.name || 'Request';
 
     return this.getUniqueId(id);
+  }
+
+  get bodySchema() {
+    return this._bodySchema || this.ancestor(Action).requestBodySchema;
+  }
+
+  set bodySchema(schema) {
+    this._bodySchema = schema;
+  }
+
+  get bodySchemaSourcemap() {
+    return this._bodySchemaSourcemap ||
+      this.ancestor(Action).requestBodySchemaSourcemap;
+  }
+
+  set bodySchemaSourcemap(sourcemap) {
+    this._bodySchemaSourcemap = sourcemap;
   }
 };

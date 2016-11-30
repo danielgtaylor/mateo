@@ -29,7 +29,7 @@ function stripBlock(text) {
 }
 
 function parseApi(apiDescription, done) {
-  ApiDescription.parse(stripBlock(apiDescription), done);
+  return ApiDescription.parse(stripBlock(apiDescription), done);
 }
 
 describe('API Elements API Blueprint Importer', () => {
@@ -642,6 +642,70 @@ describe('API Elements API Blueprint Importer', () => {
         .to.have.deep.property(
           'resources[0].actions[0].examples[0].response.body')
         .to.not.be.empty;
+    });
+
+    context('Schema override', () => {
+      before(() => {
+        const APIB = `
+          FORMAT: 1A
+
+          # API Title
+          # Group My Resources
+          ## Resource [/resources]
+          ### Get the resource [GET]
+          + Request Search (application/json)
+
+              + Attributes
+
+                  + tag: Test - Filter resources by tag
+
+          + Response 200 (application/json)
+
+              + Attributes
+
+                  + id: 123
+
+          + Request Internal error (application/json)
+
+              + Attributes
+
+                  + tag: Test - Filter resources by tag
+
+          + Response 500 (application/json)
+
+              + Attributes
+
+                  + message - Error message`;
+
+        return parseApi(APIB).then((parsed) => {
+          api = parsed;
+        });
+      });
+
+      it('should override the default action schema', () => {
+        expect(api)
+          .to.have.deep.property('resources[0].actions[0].examples')
+          .to.have.length(2);
+
+        const action = api.resources[0].actions[0];
+        const example1 = action.examples[0];
+        const example2 = action.examples[1];
+
+        // The first non-error example should set the action's schema. This
+        // means the first response schema should be the same.
+        expect(example1.response.bodySchema)
+          .to.deep.equal(action.responseBodySchema);
+
+        // The first error example should set the action's error schema. This
+        // means the second response schema should be the same.
+        expect(example2.response.bodySchema)
+          .to.deep.equal(action.responseErrorSchema);
+
+        // The error response schema should be different since it returns
+        // and error message rather than the expected successful response type.
+        expect(example1.response.bodySchema)
+          .to.not.deep.equal(example2.response.bodySchema);
+      });
     });
   });
 });

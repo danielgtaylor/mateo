@@ -1,6 +1,8 @@
-# Unreleased
+# 0.6.0 - 2016-11-29
 
 - Upgrade to Hercule 3.2.2 for better sourcemap support from API Blueprint input with multiple referenced files.
+- Differentiate between success and error response schemas. An `Action` now has both `responseBodySchema` and `responseErrorSchema` available if responses with <400 and >=400 status codes are present, respectively. Individual responses continue to just have a `bodySchema` regardless of status code.
+- Fix a bug where a request would fall back to the action's response schema rather than the request schema.
 
 # 0.5.0 - 2016-11-17
 

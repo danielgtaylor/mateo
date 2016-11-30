@@ -323,12 +323,26 @@ class ApiElementsImporter {
               action.requestBodySchemaSourcemap = this.s(requestBodySchema);
             }
           } else if (asset && asset.element === 'httpResponse') {
-            if (!action.responseBodySchema) {
-              const responseBodySchema = this.v(asset, 'content', []).filter(
-                (item) => this.hasClass(item, 'messageBodySchema')
-              )[0];
-              action.responseBodySchema = this.v(responseBodySchema);
-              action.responseBodySchemaSourcemap = this.s(responseBodySchema);
+            if (this.v(asset, 'attributes.statusCode') < 400) {
+              // We use the first non-error response with a body schema to set
+              // the response success schema for the action.
+              if (!action.responseBodySchema) {
+                const responseBodySchema = this.v(asset, 'content', []).filter(
+                  item => this.hasClass(item, 'messageBodySchema')
+                )[0];
+                action.responseBodySchema = this.v(responseBodySchema);
+                action.responseBodySchemaSourcemap = this.s(responseBodySchema);
+              }
+            } else {
+              // We use the first error response with a body schema to set
+              // the response error schema for the action.
+              if (!action.responseErrorSchema) {
+                const responseErrorSchema = this.v(asset, 'content', []).filter(
+                  item => this.hasClass(item, 'messageBodySchema')
+                )[0];
+                action.responseErrorSchema = this.v(responseErrorSchema);
+                action.responseErrorSchemaSourcemap = this.s(responseErrorSchema);
+              }
             }
           }
         }
@@ -361,14 +375,34 @@ class ApiElementsImporter {
 
   getAssets(instance, element) {
     const assets = this.v(element, 'content', []).filter(
-      (item) => item && item.element === 'asset');
+      item => item && item.element === 'asset');
 
     const body = assets.filter(
-      (item) => this.hasClass(item, 'messageBody')
+      item => this.hasClass(item, 'messageBody')
     )[0];
 
     instance.body = this.v(body);
     instance.bodySourcemap = this.s(body);
+
+    const schema = assets.filter(
+      item => this.hasClass(item, 'messageBodySchema')
+    )[0];
+
+    if (instance.statusCode !== undefined && instance.statusCode >= 400) {
+      // This is an error. If the parent action's error schema isn't the
+      // same as this response schema, then set it as an override.
+      if (instance.ancestor(Action).errorSchema !== this.v(schema)) {
+        instance.bodySchema = this.v(schema);
+        instance.bodySchemaSourcemap = this.s(schema);
+      }
+    } else {
+      // This is a successful response. If the parent action's schema isn't
+      // the same as this response schema, then set it as an override.
+      if (instance.ancestor(Action).bodySchema !== this.v(schema)) {
+        instance.bodySchema = this.v(schema);
+        instance.bodySchemaSourcemap = this.s(schema);
+      }
+    }
   }
 
   getHeaders(instance, element) {
@@ -399,11 +433,12 @@ class ApiElementsImporter {
 
     this.getNameDescription(response, element, '');
     this.getHeaders(response, element);
-    this.getAssets(response, element);
 
     response.statusCode = parseInt(
       this.v(element, 'attributes.statusCode', '200'), 10);
     response.statusCodeSourcemap = this.s(element, 'attributes.statusCode');
+
+    this.getAssets(response, element);
 
     return response;
   }

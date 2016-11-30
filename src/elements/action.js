@@ -16,6 +16,8 @@ module.exports = class Action extends UriBaseElement {
       responseHeadersSchema: null,
       responseBodySchema: null,
       responseBodySchemaSourcemap: null,
+      responseErrorSchema: null,
+      responseErrorSchemaSourcemap: null,
       examples: [],
     });
     super(options);
@@ -34,6 +36,7 @@ module.exports = class Action extends UriBaseElement {
       deprecated: this.deprecated,
       requestBodySchema: this.requestBodySchema,
       responseBodySchema: this.responseBodySchema,
+      responseErrorSchema: this.responseErrorSchema,
       examples: this.examples
     };
   }

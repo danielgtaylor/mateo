@@ -1,4 +1,3 @@
-const Action = require('./action');
 const defaults = require('lodash.defaults');
 
 module.exports = Base => class TransactionMixin extends Base {
@@ -7,6 +6,8 @@ module.exports = Base => class TransactionMixin extends Base {
       headers: [],
       body: '',
       bodySourcemap: null,
+      _bodySchema: null,
+      _bodySchemaSourcemap: null
     });
     super(options);
   }
@@ -25,13 +26,5 @@ module.exports = Base => class TransactionMixin extends Base {
 
   get sourcemap() {
     return this._sourcemap || this.bodySourcemap || this.bodySchemaSourcemap;
-  }
-
-  get bodySchema() {
-    return this.ancestor(Action).responseBodySchema;
-  }
-
-  get bodySchemaSourcemap() {
-    return this.ancestor(Action).responseBodySchemaSourcemap;
   }
 };
