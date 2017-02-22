@@ -9,7 +9,7 @@
   "dependencies": {
     "drafter": "^1.1.0",
     "fury-adapter-swagger": "^0.9.6",
-    "hercule": "^3.2.2",
+    "hercule": "^4.0.0",
     "lodash.defaults": "^4.2.0",
     "lodash.get": "^4.4.2",
     "lodash.merge": "^4.6.0",

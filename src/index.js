@@ -64,7 +64,7 @@ function parse(apiDescription, options={}, done) {
       source: options.filename
     };
 
-    transcludeString(apiDescription, herculeOptions, (err, transcluded, sources, sourcemap) => {
+    transcludeString(apiDescription, herculeOptions, (err, transcluded, sourcemap) => {
       drafter.parse(transcluded, {exportSourcemap: true}, (err, parsed) => {
         if (err) return done(err);
 
